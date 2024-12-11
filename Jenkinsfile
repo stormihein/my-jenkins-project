@@ -1,26 +1,32 @@
 pipeline {
     agent any
 
+    environment {
+        DOCKER_HUB_CREDENTIALS = credentials('dockerhub-credentials-id') // Your created credentials ID
+    }
+
     stages {
-        stage('Build') {
+        stage('Checkout') {
             steps {
-                // Example: Install dependencies for a Node.js app
-                sh 'npm install'
+                // Pull code from the repository
+                git branch: 'main', url: 'https://github.com/stormihein/my-jenkins-project.git'
             }
         }
 
-        stage('Test') {
+        stage('Build Docker Image') {
             steps {
-                // Example: Run tests
-                sh 'npm test'
+                // Build the Docker image
+                sh 'docker build -t stormihein/my-jenkins-app .'
             }
         }
 
-        stage('Deploy') {
+        stage('Push to Docker Hub') {
             steps {
-                // Example: Deploy to a remote server or copy files
-                echo 'Deploying application...'
-                // Replace this with your actual deployment command
+                // Log in to Docker Hub and push the image
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-credentials-id', passwordVariable: 'DOCKER_PASSWORD', usernameVariable: 'DOCKER_USERNAME')]) {
+                    sh 'echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin'
+                    sh 'docker push stormihein/my-jenkins-app'
+                }
             }
         }
     }
